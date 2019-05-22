@@ -33,27 +33,37 @@
 <body>
 
 <div style="display:none;">
-	<input class="form-control" type="url" value="http://localhost:7474" id="neo4jUrl"/><br/>
+	<input class="form-control" type="url" value="http://192.168.120.87:7474" id="neo4jUrl"/><br/>
 	<input class="form-control" type="text" size="8" value="neo4j" id="neo4jUser"/>
 	<input class="form-control" type="password" size="8" placeholder="password" value="neo4j!@" id="neo4jPass"/><br/>
 	<textarea name="cypher" id="cypher" rows="4" cols="120" data-lang="cypher" class="code form-control">
-		MATCH (n)
-		RETURN n
-		LIMIT 100;
+ 		MATCH p=(n)-[r]->(m)
+	 	RETURN p as total
+	  	LIMIT 50
 	</textarea>
 </div>
 
 <div role="form" style="margin-top: 10px;">
-	<div class="col-lg-offset-4 col-lg-2 form-group">
-		<select id="selectId" class="selectpicker show-menu-arrow form-control">
-			<option>연구원</option>
-			<option>논문</option>
-		</select>
+<!-- 	<div class="col-lg-offset-4 col-lg-2 form-group"> -->
+<!-- 		<select id="executeSel" class="selectpicker show-menu-arrow form-control"> -->
+<!-- 			<option value="R">연구원</option> -->
+<!-- 			<option value="T">논문</option> -->
+<!-- 			<option value="O">기관</option> -->
+<!-- 		</select> -->
+<!-- 	</div> -->
+	<div class="col-lg-offset-3 col-lg-2 form-group">
+		<label>논문</label>	
+		<input type="text" size="10" id="input_Thesis" class="form-control enter_class">
 	</div>
 	<div class="col-lg-2 form-group">
-		<input type="text" size="10" id="inputId" class="form-control">
+		<label>연구자</label>	
+		<input type="text" size="10" id="input_Researcher" class="form-control enter_class">
 	</div>
-	<div class="col-lg-1 form-group" style="text-align: left;">
+	<div class="col-lg-2 form-group">
+		<label>기관</label>	
+		<input type="text" size="10" id="input_Organ" class="form-control enter_class">
+	</div>
+	<div class="col-lg-2 form-group" style="text-align: left;">
 		<a href="#" title="Execute" id="execute"><i class="fa fa-play-circle-o"></i></a>
 	</div>
 </div>
@@ -81,12 +91,20 @@
 	
 <script>
 
+var q_params = {};
+var nodeIdsArr = []; // 한 번 클릭한 nodes 중복안되게 하는 flag array
+var totalNodes = {};
 $(function(){
 	//todo dynamic configuration
 	var config = {}
     var connection = function() { return {url:$("#neo4jUrl").val(), user:$("#neo4jUser").val(),pass:$("#neo4jPass").val()}; }
-	new Cy2NeoD3(config,"graph","datatable","cypher","execute", connection , true);
+	new Cy2NeoD3(config,"graph","datatable","cypher","execute", connection , true, null, q_params);
 	$("#execute").trigger("click");
+	$(".enter_class").on("keydown", function(e){
+		if(e.keyCode == 13){
+			$("#execute").click();
+		}
+	})
 });
 
 </script>

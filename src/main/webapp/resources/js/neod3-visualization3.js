@@ -42,76 +42,7 @@ function Neod3Renderer() {
 
     var existingStyles = {};
     var currentColor = 1;
-
-    function dummyFunc(nodes) {
-    	console.log(nodes);
-//    	var editor = CodeMirror.fromTextArea(document.getElementById("cypher"), {
-//            mode: "text/html",
-//            lineNumbers: true,
-//        });
-//    	editor.setValue("AAAAAAAAAAAAAAAA");
-    	
-    }
-    function relactionFunc(nodes) {
-    	var params = q_params;
-    	var label = nodes.labels[0];
-    	var name = nodes.propertyMap.name;
-    	var nodeId = nodes.id;
-    	var renderGraph = true;
-    	var cbResult = null;
-    	var graphId = "graph";
-    	
-    	var urlSource = function() { return {url:$("#neo4jUrl").val(), user:$("#neo4jUser").val(),pass:$("#neo4jPass").val()}; }
-    	var neod3 = new Neod3Renderer();
-		var neo = new Neo(urlSource);
-		var editor = CodeMirror.fromTextArea(document.getElementById("cypher"));
-		var query = editor.getValue();
-			
-		// 검색조건이 있는지 확인
-		var thesis = $("#input_Thesis").val();
-		var researcher = $("#input_Researcher").val();
-		var organ = $("#input_Organ").val();
-		
-		
-		if(nodeIdsArr.indexOf(nodeId) == -1){ // 이미 id가 한번 검색이 됐다면 그 id는 다시 검색 안되게 조건문으로 막는다
-			if(label == "Researcher"){
-				query += "UNION ALL MATCH p=(n:Researcher)-[r]->(m) where ID(n) = " + Number(nodeId) + " RETURN p as total limit 20 "
-			}else if(label == "Thesis"){
-				query += "UNION ALL MATCH p=(n:Thesis)-[r]->(m) where ID(n) = " + Number(nodeId) + " RETURN p as total limit 20 "
-			}else if(label == "Organ"){
-				query += "UNION ALL MATCH p=(n:Organ)-[r]->(m) where ID(n) = " + Number(nodeId) + " RETURN p as total limit 20 "
-			}
-			nodeIdsArr.push(nodeId);
-		}
-		$("#cypher").val(query);
-//		console.log("Parameters === ",params);
-
-//		console.log("Executing Query === ",query);
-		var execButton = $(this).find('i');
-		execButton.toggleClass('fa-play-circle-o fa-spinner fa-spin')
-		neo.executeQuery(query,params,function(err,res) {
-			execButton.toggleClass('fa-spinner fa-spin fa-play-circle-o')
-			res = res || {}
-			var graph=res.graph;
-			if (renderGraph) {
-				if (graph) {
-					var c=$("#"+graphId);
-					c.empty();
-					neod3.render(graphId, c ,graph);
-				} else {
-					if (err) {
-						console.log(err);
-						if (err.length > 0) {
-							sweetAlert("Cypher error", err[0].code + "\n" + err[0].message, "error");
-						} else {
-							sweetAlert("Ajax " + err.statusText, "Status " + err.status + ": " + err.state(), "error");
-						}
-					}
-				}
-			}
-			if(cbResult) cbResult(res);
-		});
-    }
+    var svg, svgNodes, svgRelationships,renderer;
 
     function render(id, $container, visualization) {
         function extract_props(pc) {
@@ -121,6 +52,98 @@ function Neod3Renderer() {
                 p[key] = pc[key];
             }
             return p;
+        }
+        
+        function dummyFunc(nodes) {
+        	//console.log(nodes);
+        }
+        
+        function relactionFunc(nodes) {
+        	var params = q_params;
+        	var label = nodes.labels[0];
+        	var name = nodes.propertyMap.name;
+        	var nodeId = nodes.id;
+        	var renderGraph = true;
+        	var cbResult = null;
+        	var graphId = "graph";
+        	
+        	var urlSource = function() { return {url:$("#neo4jUrl").val(), user:$("#neo4jUser").val(),pass:$("#neo4jPass").val()}; }
+        	var neod3 = new Neod3Renderer();
+    		var neo4j = new Neo(urlSource);
+    		var editor = CodeMirror.fromTextArea(document.getElementById("cypher"));
+    		var query = editor.getValue();
+    			
+    		// 검색조건이 있는지 확인
+    		var thesis = $("#input_Thesis").val();
+    		var researcher = $("#input_Researcher").val();
+    		var organ = $("#input_Organ").val();
+    		
+    		
+    		if(nodeIdsArr.indexOf(nodeId) == -1){ // 이미 id가 한번 검색이 됐다면 그 id는 다시 검색 안되게 조건문으로 막는다
+    			if(label == "Researcher"){
+    				query = "MATCH p=(n:Researcher)-[r]->(m) where ID(n) = " + Number(nodeId) + " RETURN p as total limit 20 "
+    			}else if(label == "Thesis"){
+    				query += "UNION ALL MATCH p=(n:Thesis)-[r]->(m) where ID(n) = " + Number(nodeId) + " RETURN p as total limit 20 "
+    			}else if(label == "Organ"){
+    				query += "UNION ALL MATCH p=(n:Organ)-[r]->(m) where ID(n) = " + Number(nodeId) + " RETURN p as total limit 20 "
+    			}
+    			nodeIdsArr.push(nodeId);
+    		}
+    		$("#cypher").val(query);
+//    		console.log("Parameters === ",params);
+
+//    		console.log("Executing Query === ",query);
+    		var execButton = $(this).find('i');
+    		execButton.toggleClass('fa-play-circle-o fa-spinner fa-spin')
+    		neo4j.executeQuery(query,params,function(err,res) {
+    			execButton.toggleClass('fa-spinner fa-spin fa-play-circle-o')
+    			res = res || {}
+    			var graph=res.graph;
+    			if (renderGraph) {
+    				if (graph) {
+    					var c=$("#"+graphId);
+//    					refresh();
+//    					c.empty();
+//    					neod3.render(graphId, c ,graph);
+    					console.log(neo);
+    					console.log(svgNodes);
+    					console.log(svgRelationships);
+    					
+    					var nodes = graph.nodes;
+    					var links = graph.links;
+    					 for (var i = 0; i < links.length; i++) {
+				            links[i].source = links[i].start;
+				            links[i].target = links[i].end;
+				        }
+    					 
+    			        var nodeStyles = node_styles(nodes);
+    			        create_styles(nodeStyles, existingStyles);
+    			        var styleSheet = style_sheet(existingStyles, styleContents);
+    			        var graphModel = neo.graphModel().nodes.add(nodes)
+    			            .relationships.add(links);
+    			        var graphView = neo.graphView()
+    			            .style(styleSheet)
+    			            .width($container.width()).height($container.height()).on('nodeClicked', dummyFunc).on('relationshipClicked', dummyFunc).on('nodeDblClicked', relactionFunc);
+    			        renderer = svg.data([graphModel]);
+    			        var zoomHandlers = {};
+    			        var zoomBehavior = d3.behavior.zoom().on("zoom", applyZoom).scaleExtent([0.2, 8]);
+    			        renderer.call(graphView);
+    			        renderer.call(zoomBehavior);
+    					
+    					
+    				} else {
+    					if (err) {
+    						console.log(err);
+    						if (err.length > 0) {
+    							sweetAlert("Cypher error", err[0].code + "\n" + err[0].message, "error");
+    						} else {
+    							sweetAlert("Ajax " + err.statusText, "Status " + err.status + ": " + err.state(), "error");
+    						}
+    					}
+    				}
+    			}
+    			if(cbResult) cbResult(res);
+    		});
         }
 
         function node_styles(nodes) {
@@ -277,9 +300,11 @@ function Neod3Renderer() {
         var graphView = neo.graphView()
             .style(styleSheet)
             .width($container.width()).height($container.height()).on('nodeClicked', dummyFunc).on('relationshipClicked', dummyFunc).on('nodeDblClicked', relactionFunc);
-        var svg = d3.select("#" + id).append("svg");
+        svg = d3.select("#" + id).append("svg");
         
-        var renderer = svg.data([graphModel]);
+//        svgNodes = svg.append('g').attr('class', 'nodes');
+//        svgRelationships = svg.append('g').attr('class', 'relationships');
+        renderer = svg.data([graphModel]);
         legend(svg,existingStyles);
         var zoomHandlers = {};
         var zoomBehavior = d3.behavior.zoom().on("zoom", applyZoom).scaleExtent([0.2, 8]);

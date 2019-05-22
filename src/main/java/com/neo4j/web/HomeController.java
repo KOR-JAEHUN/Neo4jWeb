@@ -26,4 +26,13 @@ public class HomeController {
 		return "neo4jView";
 	}
 	
+	/**
+	 * Simply selects the home view to render by returning its name.
+	 */
+	@RequestMapping(value = "/crawl", method = RequestMethod.GET)
+	public String crawl(Locale locale, Model model) {
+		
+		return "crawl";
+	}
+	
 }

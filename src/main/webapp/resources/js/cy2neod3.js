@@ -1,4 +1,4 @@
-function Cy2NeoD3(config, graphId, tableId, sourceId, execId, urlSource, renderGraph, cbResult) {
+function Cy2NeoD3(config, graphId, tableId, sourceId, execId, urlSource, renderGraph, cbResult, params) {
     function createEditor() {
 		return CodeMirror.fromTextArea(document.getElementById(sourceId), {
 		  parserfile: ["codemirror-cypher.js"],
@@ -14,22 +14,60 @@ function Cy2NeoD3(config, graphId, tableId, sourceId, execId, urlSource, renderG
 	var neo = new Neo(urlSource);
     var editor = createEditor();
 	$("#"+execId).click(function(evt) {
+		nodeIdsArr = [];
+		prev_query = "";
 		try {
 			evt.preventDefault();
 			var query = editor.getValue();
-			console.log("Executing Query",query);
+			
+			// 검색조건이 있는지 확인
+			var thesis = $("#input_Thesis").val();
+			var researcher = $("#input_Researcher").val();
+			var organ = $("#input_Organ").val();
+			
+			if((researcher != null && researcher != "") || thesis != null && thesis != "" || organ != null && organ != ""){
+				query = "MATCH p=";
+				if(thesis != null && thesis != ""){
+					query += "(m:Thesis {name: $t_name})";
+					params["t_name"] = thesis;
+				}else{
+					query += "(m:Thesis)";
+					delete params["t_name"];
+				}
+				if(researcher != null && researcher != ""){
+					query += "<-[r1]-(n:Researcher { name: $r_name })-[r2]->";
+					params["r_name"] = researcher;
+				}else{
+					query += "<-[r1]-(n:Researcher)-[r2]->";
+					delete params["r_name"];
+				}
+				if(organ != null && organ != ""){
+					query += "(o:Organ { name: $o_name })";
+					params["o_name"] = organ;
+				}else{
+					query += "(o:Organ)";
+					delete params["o_name"];
+				}
+				query += " RETURN p as total limit 100 ";
+			}
+//			console.log("Parameters === ",params);
+			$("#cypher").val(query);
+		
+//			console.log("Executing Query === ",query);
 			var execButton = $(this).find('i');
 			execButton.toggleClass('fa-play-circle-o fa-spinner fa-spin')
-			neo.executeQuery(query,{},function(err,res) {
+			neo.executeQuery(query,params,function(err,res) {
 				execButton.toggleClass('fa-spinner fa-spin fa-play-circle-o')
 				res = res || {}
 				var graph=res.graph;
+				totalNodes = graph;
+//				console.log(totalNodes);
 				if (renderGraph) {
 					if (graph) {
 						var c=$("#"+graphId);
 						c.empty();
+//						console.log(graph);
 						neod3.render(graphId, c ,graph);
-						renderResult(tableId, res.table);
 					} else {
 						if (err) {
 							console.log(err);
